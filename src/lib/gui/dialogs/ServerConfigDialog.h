@@ -9,6 +9,7 @@
 #pragma once
 
 #include "ComputerSetupModel.h"
+#include "common/KeySequence.h"
 #include "common/NetworkProtocol.h"
 #include "config/ServerConfig.h"
 
@@ -54,6 +55,9 @@ protected:
 
   void toggleSwitchDelay(bool enable);
   void setSwitchDelay(int delay);
+
+  void toggleSwitchModifier(bool enable);
+  void setSwitchKeySequence();
 
   void toggleDefaultLockToComputerState(bool state);
   void toggleLockToComputer(bool disabled);
@@ -112,6 +116,8 @@ private:
   bool m_relativeMouseMoves;
   bool m_enableSwitchDelay;
   bool m_enableSwitchDoubleTap;
+  bool m_enableSwitchModifier;
+  KeySequence m_switchKeySequence;
   bool m_originalServerConfigIsExternal;
   bool m_win32keepForeground;
   bool m_disableLockToComputer;

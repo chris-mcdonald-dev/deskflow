@@ -440,6 +440,7 @@ void Server::switchComputer(BaseClientProxy *dst, int32_t x, int32_t y, bool for
 
   // stop waiting to switch
   stopSwitch();
+  m_switchPending = false;
 
   // record new position
   m_x = x;
@@ -975,6 +976,34 @@ bool Server::isSwitchWaitStarted() const
   return (m_switchWaitTimer != nullptr);
 }
 
+bool Server::isSwitchKeyHeld() const
+{
+  if (m_switchModifierMask == 0 && m_switchKey == kKeyNone) {
+    return true;
+  }
+
+  if (m_switchModifierMask != 0) {
+    auto required = m_switchModifierMask;
+    auto active = m_primaryClient->getToggleMask();
+
+    // toolkits conflate meta and super, accept either
+    constexpr KeyModifierMask superMeta = KeyModifierSuper | KeyModifierMeta;
+    if ((required & superMeta) != 0) {
+      if ((active & superMeta) == 0) {
+        return false;
+      }
+      required &= ~superMeta;
+      active &= ~superMeta;
+    }
+
+    if ((active & required) != required) {
+      return false;
+    }
+  }
+
+  return m_switchKey == kKeyNone || m_switchKeyDown;
+}
+
 uint32_t Server::getCorner(const BaseClientProxy *client, int32_t x, int32_t y, int32_t size) const
 {
   assert(client != nullptr);
@@ -1086,6 +1115,8 @@ void Server::processOptions()
   }
 
   bool newRelativeMoves = m_relativeMoves;
+  KeyModifierMask newSwitchModifierMask = 0;
+  KeyID newSwitchKey = kKeyNone;
   for (auto [optionId, optionValue] : *options) {
     const OptionID id = optionId;
     const OptionValue value = optionValue;
@@ -1103,6 +1134,10 @@ void Server::processOptions()
       stopSwitchTwoTap();
     } else if (id == kOptionRelativeMouseMoves) {
       newRelativeMoves = (value != 0);
+    } else if (id == kOptionComputerSwitchModifier) {
+      newSwitchModifierMask = static_cast<KeyModifierMask>(value);
+    } else if (id == kOptionComputerSwitchKey) {
+      newSwitchKey = static_cast<KeyID>(value);
     } else if (id == kOptionDefaultLockToComputerState) {
       m_defaultLockToComputerState = (value != 0);
     } else if (id == kOptionDisableLockToComputer) {
@@ -1127,6 +1162,11 @@ void Server::processOptions()
   if (m_relativeMoves && !newRelativeMoves) {
     stopRelativeMoves();
   }
+  if (m_switchKey != newSwitchKey) {
+    m_switchKeyDown = false;
+  }
+  m_switchModifierMask = newSwitchModifierMask;
+  m_switchKey = newSwitchKey;
   m_relativeMoves = newRelativeMoves;
   m_protocol = Settings::networkProtocol();
 }
@@ -1278,6 +1318,13 @@ void Server::handleSwitchWaitTimeout()
   // ignore if mouse is locked to computer
   if (isLockedToComputer()) {
     LOG_VERBOSE("locked to computer");
+    stopSwitch();
+    return;
+  }
+
+  // ignore if the switch key was released while waiting
+  if (!isSwitchKeyHeld()) {
+    LOG_VERBOSE("not switching: switch modifier key is not held");
     stopSwitch();
     return;
   }
@@ -1537,6 +1584,16 @@ void Server::onKeyDown(KeyID id, KeyModifierMask mask, KeyButton button, const s
   LOG_VERBOSE("onKeyDown id=%d mask=0x%04x button=0x%04x lang=%s", id, mask, button, lang.c_str());
   assert(m_active != nullptr);
 
+  // track the key used to allow switching computers
+  if (m_switchKey != kKeyNone && id == m_switchKey) {
+    m_switchKeyDown = true;
+  }
+
+  // the key may only be observed at the edge, so retry now that it is down
+  if (m_switchPending && m_active == m_primaryClient && isSwitchKeyHeld()) {
+    onMouseMovePrimary(m_x, m_y);
+  }
+
   // relay
   if (!m_keyboardBroadcasting && IKeyState::KeyInfo::isDefault(computers)) {
     m_active->keyDown(id, mask, button, lang);
@@ -1559,6 +1616,11 @@ void Server::onKeyUp(KeyID id, KeyModifierMask mask, KeyButton button, const cha
 {
   LOG_VERBOSE("onKeyUp id=%d mask=0x%04x button=0x%04x", id, mask, button);
   assert(m_active != nullptr);
+
+  // track the key used to allow switching computers
+  if (m_switchKey != kKeyNone && id == m_switchKey) {
+    m_switchKeyDown = false;
+  }
 
   // relay
   if (!m_keyboardBroadcasting && IKeyState::KeyInfo::isDefault(computers)) {
@@ -1676,9 +1738,19 @@ bool Server::onMouseMovePrimary(int32_t x, int32_t y)
   }
   if (dirh == NoDirection && dirv == NoDirection) {
     // still on local computer
+    m_switchPending = false;
     noSwitch(x, y);
     return false;
   }
+
+  // only leave the primary computer while the configured switch key is held
+  if (!isSwitchKeyHeld()) {
+    LOG_VERBOSE("not switching: switch key is not held");
+    m_switchPending = true;
+    noSwitch(x, y);
+    return false;
+  }
+  m_switchPending = false;
 
   // check both horizontally and vertically
   std::array<Direction, 2> dirs = {dirh, dirv};
@@ -1837,8 +1909,14 @@ void Server::onMouseMoveSecondary(int32_t dx, int32_t dy)
     // try to switch computer.  get the neighbor.
     newComputer = mapToNeighbor(m_active, dir, m_x, m_y);
 
-    // see if we should switch
-    if (!isSwitchOkay(newComputer, dir, m_x, m_y, xc, yc)) {
+    // only switch computers while the configured switch key is held
+    if (!isSwitchKeyHeld()) {
+      LOG_VERBOSE("not switching: switch key is not held");
+      noSwitch(m_x, m_y);
+      newComputer = m_active;
+      jump = false;
+    } else if (!isSwitchOkay(newComputer, dir, m_x, m_y, xc, yc)) {
+      // see if we should switch
       newComputer = m_active;
       jump = false;
     }

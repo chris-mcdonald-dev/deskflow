@@ -116,8 +116,10 @@ public:
     inline static const auto Heartbeat = QStringLiteral("server/heartbeat");
     inline static const auto Protocol = QStringLiteral("server/protocol");
     inline static const auto RelativeMouseMoves = QStringLiteral("server/relativeMouseMoves");
+    inline static const auto RequireModifierToSwitch = QStringLiteral("server/requireModifierToSwitch");
     inline static const auto SwitchDelay = QStringLiteral("server/switchDelay");
     inline static const auto SwitchDoubleTap = QStringLiteral("server/switchDoubleTap");
+    inline static const auto SwitchModifierKey = QStringLiteral("server/switchModifierKey");
     inline static const auto Win32KeepForeground = QStringLiteral("server/win32KeepForeground");
     inline static const auto XdpClipboardRetried = QStringLiteral("server/xdpClipboardRetried");
     inline static const auto XdpRestoreToken = QStringLiteral("server/xdpRestoreToken");
@@ -332,8 +334,10 @@ private:
     , Server::Heartbeat
     , Server::Protocol
     , Server::RelativeMouseMoves
+    , Server::RequireModifierToSwitch
     , Server::SwitchDelay
     , Server::SwitchDoubleTap
+    , Server::SwitchModifierKey
     , Server::Win32KeepForeground
   };
 
@@ -362,6 +366,7 @@ private:
     , Server::EnableSwitchDoubleTap
     , Server::ExternalConfig
     , Server::RelativeMouseMoves
+    , Server::RequireModifierToSwitch
     , Server::XdpClipboardRetried
   };
 

@@ -53,10 +53,10 @@ void KeySequenceWidget::startRecording()
 
 void KeySequenceWidget::stopRecording()
 {
-  if (!keySequence().valid()) {
+  if (!keySequence().valid() && !(allowModifierOnly() && keySequence().isModifierOnly())) {
     m_KeySequence = backupSequence();
-    updateOutput();
   }
+  updateOutput();
 
   setDown(false);
   focusNextChild();
@@ -73,6 +73,13 @@ bool KeySequenceWidget::event(QEvent *event)
       keyPressEvent(static_cast<QKeyEvent *>(event));
       return true;
 
+    case QEvent::KeyRelease:
+      if (allowModifierOnly()) {
+        keyReleaseEvent(static_cast<QKeyEvent *>(event));
+        return true;
+      }
+      break;
+
     case QEvent::MouseButtonRelease:
     case QEvent::ShortcutOverride:
       event->accept();
@@ -80,10 +87,6 @@ bool KeySequenceWidget::event(QEvent *event)
 
     case QEvent::FocusOut:
       stopRecording();
-      if (!valid()) {
-        m_KeySequence = backupSequence();
-        updateOutput();
-      }
       break;
 
     default:
@@ -105,6 +108,18 @@ void KeySequenceWidget::keyPressEvent(QKeyEvent *event)
     stopRecording();
 
   updateOutput();
+}
+
+void KeySequenceWidget::keyReleaseEvent(QKeyEvent *event)
+{
+  event->accept();
+
+  if (status() == Stopped)
+    return;
+
+  // a modifier pressed on its own completes the sequence when it is released
+  if (m_KeySequence.isModifierOnly())
+    stopRecording();
 }
 
 void KeySequenceWidget::updateOutput()

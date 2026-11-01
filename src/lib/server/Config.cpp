@@ -9,6 +9,7 @@
 #include "server/Config.h"
 
 #include "base/IEventQueue.h"
+#include "base/Log.h"
 #include "common/KeyboardModifier.h"
 #include "deskflow/KeyMap.h"
 #include "deskflow/KeyTypes.h"
@@ -24,6 +25,41 @@
 using namespace deskflow::string;
 
 namespace deskflow::server {
+namespace {
+
+//! A switch key and the modifiers that must be held with it
+struct SwitchKey
+{
+  KeyModifierMask m_mask = 0;
+  KeyID m_key = kKeyNone;
+
+  bool isValid() const
+  {
+    return m_mask != 0 || m_key != kKeyNone;
+  }
+};
+
+//! Parse a switch key, accepts keystroke syntax or a lone modifier
+SwitchKey parseSwitchKey(const QString &value)
+{
+  SwitchKey switchKey;
+  auto text = value.toStdString();
+  if (text.empty()) {
+    return switchKey;
+  }
+
+  if (!deskflow::KeyMap::parseModifiers(text, switchKey.m_mask)) {
+    return {};
+  }
+  if (!deskflow::KeyMap::parseKey(text, switchKey.m_key)) {
+    return {};
+  }
+
+  return switchKey;
+}
+
+} // namespace
+
 //
 // Config
 //
@@ -544,6 +580,19 @@ void Config::readSectionOptions(ConfigReadContext &s)
 
   if (Settings::value(Settings::Server::EnableSwitchDoubleTap).toBool()) {
     addOption("", kOptionComputerSwitchTwoTap, Settings::value(Settings::Server::SwitchDoubleTap).toInt());
+  }
+
+  if (Settings::value(Settings::Server::RequireModifierToSwitch).toBool()) {
+    const auto switchKeyValue = Settings::value(Settings::Server::SwitchModifierKey).toString();
+    if (const auto switchKey = parseSwitchKey(switchKeyValue); switchKey.isValid()) {
+      addOption("", kOptionComputerSwitchModifier, static_cast<OptionValue>(switchKey.m_mask));
+      if (switchKey.m_key != kKeyNone) {
+        addOption("", kOptionComputerSwitchKey, static_cast<OptionValue>(switchKey.m_key));
+      }
+    } else {
+      const auto text = switchKeyValue.toStdString();
+      LOG_WARN("ignoring invalid switch key \"%s\"", text.c_str());
+    }
   }
 
   addOption(

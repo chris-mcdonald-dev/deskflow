@@ -17,6 +17,7 @@
 #include "dialogs/ComputerSettingsDialog.h"
 #include "dialogs/HotkeyDialog.h"
 #include "gui/widgets/SettingsDialogButtonBox.h"
+#include "widgets/KeySequenceWidget.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -39,8 +40,11 @@ ServerConfigDialog::ServerConfigDialog(QWidget *parent, ServerConfig &config)
   ui->tabWidget->setCurrentIndex(0);
   layout()->addWidget(m_buttonBox);
 
-  loadFromConfig();
+  ui->keySequenceSwitchModifier->setKeyPrefix(QString());
+  ui->keySequenceSwitchModifier->setKeyPostfix(QString());
+  ui->keySequenceSwitchModifier->setAllowModifierOnly(true);
 
+  loadFromConfig();
   ui->lblRemoveComputer->setPixmap(QIcon::fromTheme("user-trash").pixmap(QSize(64, 64)));
   ui->lblNewComputer->setEnabled(!model().isFull());
   ui->lblNewComputer->setPixmap(QIcon::fromTheme("video-display").pixmap(QSize(64, 64)));
@@ -88,6 +92,8 @@ void ServerConfigDialog::save()
   Settings::setValue(Settings::Server::DisableLockToComputer, m_disableLockToComputer);
   Settings::setValue(Settings::Server::EnableSwitchDoubleTap, m_enableSwitchDoubleTap);
   Settings::setValue(Settings::Server::SwitchDoubleTap, m_switchDoubleTap);
+  Settings::setValue(Settings::Server::RequireModifierToSwitch, m_enableSwitchModifier);
+  Settings::setValue(Settings::Server::SwitchModifierKey, m_switchKeySequence.toString());
   Settings::setValue(Settings::Server::RelativeMouseMoves, m_relativeMouseMoves);
   Settings::setValue(Settings::Server::Win32KeepForeground, m_win32keepForeground);
   Settings::setValue(Settings::Server::ExternalConfig, ui->groupExternalConfig->isChecked());
@@ -323,6 +329,22 @@ void ServerConfigDialog::setSwitchDelay(int delay)
   setButtonBoxEnabledButtons();
 }
 
+void ServerConfigDialog::toggleSwitchModifier(bool enable)
+{
+  m_enableSwitchModifier = enable;
+  ui->keySequenceSwitchModifier->setEnabled(enable);
+  setButtonBoxEnabledButtons();
+}
+
+void ServerConfigDialog::setSwitchKeySequence()
+{
+  const auto &sequence = ui->keySequenceSwitchModifier->keySequence();
+  if (m_switchKeySequence == sequence)
+    return;
+  m_switchKeySequence = sequence;
+  setButtonBoxEnabledButtons();
+}
+
 void ServerConfigDialog::toggleDefaultLockToComputerState(bool state)
 {
   if (m_defaultLockToComputerState == state)
@@ -396,6 +418,8 @@ void ServerConfigDialog::loadFromConfig()
   m_switchDelay = Settings::value(Settings::Server::SwitchDelay).toInt();
   m_enableSwitchDoubleTap = Settings::value(Settings::Server::EnableSwitchDoubleTap).toBool();
   m_switchDoubleTap = Settings::value(Settings::Server::SwitchDoubleTap).toInt();
+  m_enableSwitchModifier = Settings::value(Settings::Server::RequireModifierToSwitch).toBool();
+  m_switchKeySequence = KeySequence::fromString(Settings::value(Settings::Server::SwitchModifierKey).toString());
   m_defaultLockToComputerState = Settings::value(Settings::Server::DefaultLockToComputerState).toBool();
   m_disableLockToComputer = Settings::value(Settings::Server::DisableLockToComputer).toBool();
   m_enableClipboard = Settings::value(Settings::Server::EnableClipboard).toBool();
@@ -454,6 +478,9 @@ void ServerConfigDialog::refreshControls()
   ui->cbSwitchDoubleTap->setChecked(m_enableSwitchDoubleTap);
   ui->sbSwitchDoubleTap->setEnabled(ui->cbSwitchDoubleTap->isChecked());
   ui->sbSwitchDoubleTap->setValue(m_switchDoubleTap);
+  ui->cbSwitchModifier->setChecked(m_enableSwitchModifier);
+  ui->keySequenceSwitchModifier->setEnabled(ui->cbSwitchModifier->isChecked());
+  ui->keySequenceSwitchModifier->setKeySequence(m_switchKeySequence);
   ui->widgetExternalConfigControls->setEnabled(ui->groupExternalConfig->isChecked());
   toggleExternalConfig(ui->groupExternalConfig->isChecked());
   ui->cbDefaultLockToComputerState->setChecked(m_defaultLockToComputerState);
@@ -499,6 +526,11 @@ void ServerConfigDialog::initConnections() const
   connect(
       ui->sbSwitchDoubleTap, QOverload<int>::of(&QSpinBox::valueChanged), this, &ServerConfigDialog::setSwitchDoubleTap
   );
+  connect(ui->cbSwitchModifier, &QCheckBox::toggled, this, &ServerConfigDialog::toggleSwitchModifier);
+  connect(
+      ui->keySequenceSwitchModifier, &KeySequenceWidget::keySequenceChanged, this,
+      &ServerConfigDialog::setSwitchKeySequence
+  );
 
   connect(ui->cbRelativeMouseMoves, &QCheckBox::toggled, this, &ServerConfigDialog::toggleRelativeMouseMoves);
   connect(ui->cbEnableClipboard, &QCheckBox::toggled, this, &ServerConfigDialog::toggleClipboard);
@@ -532,6 +564,8 @@ void ServerConfigDialog::updateControls() const
   ui->rbProtocolSynergy->setEnabled(writable);
   ui->cbHeartbeat->setEnabled(writable);
   ui->cbRelativeMouseMoves->setEnabled(writable);
+  ui->cbSwitchModifier->setEnabled(writable);
+  ui->keySequenceSwitchModifier->setEnabled(writable && ui->cbSwitchModifier->isChecked());
   ui->cbSwitchDelay->setEnabled(writable);
   ui->cbWin32KeepForeground->setEnabled(writable);
   ui->cbSwitchDoubleTap->setEnabled(writable);
@@ -550,6 +584,8 @@ void ServerConfigDialog::restoreFromDefaults()
   m_win32keepForeground = Settings::defaultValue(Settings::Server::Win32KeepForeground).toBool();
   m_enableSwitchDelay = Settings::defaultValue(Settings::Server::EnableSwitchDelay).toBool();
   m_switchDelay = Settings::defaultValue(Settings::Server::SwitchDelay).toInt();
+  m_enableSwitchModifier = Settings::defaultValue(Settings::Server::RequireModifierToSwitch).toBool();
+  m_switchKeySequence = KeySequence::fromString(Settings::defaultValue(Settings::Server::SwitchModifierKey).toString());
   m_enableSwitchDoubleTap = Settings::defaultValue(Settings::Server::EnableSwitchDoubleTap).toBool();
   m_switchDoubleTap = Settings::defaultValue(Settings::Server::SwitchDoubleTap).toInt();
   m_defaultLockToComputerState = Settings::defaultValue(Settings::Server::DefaultLockToComputerState).toBool();
@@ -603,6 +639,8 @@ bool ServerConfigDialog::isGeneralConfigModified() const
          m_switchDelay != Settings::value(Settings::Server::SwitchDelay).toInt() ||
          m_enableSwitchDoubleTap != Settings::value(Settings::Server::EnableSwitchDoubleTap).toBool() ||
          m_switchDoubleTap != Settings::value(Settings::Server::SwitchDoubleTap).toInt() ||
+         m_enableSwitchModifier != Settings::value(Settings::Server::RequireModifierToSwitch).toBool() ||
+         m_switchKeySequence.toString() != Settings::value(Settings::Server::SwitchModifierKey).toString() ||
          m_relativeMouseMoves != Settings::value(Settings::Server::RelativeMouseMoves).toBool() ||
          m_win32keepForeground != Settings::value(Settings::Server::Win32KeepForeground).toBool() ||
          m_disableLockToComputer != Settings::value(Settings::Server::DisableLockToComputer).toBool() ||
@@ -622,6 +660,8 @@ bool ServerConfigDialog::isGeneralConfigDefault() const
          m_switchDelay == Settings::defaultValue(Settings::Server::SwitchDelay).toInt() &&
          m_enableSwitchDoubleTap == Settings::defaultValue(Settings::Server::EnableSwitchDoubleTap).toBool() &&
          m_switchDoubleTap == Settings::defaultValue(Settings::Server::SwitchDoubleTap).toInt() &&
+         m_enableSwitchModifier == Settings::defaultValue(Settings::Server::RequireModifierToSwitch).toBool() &&
+         m_switchKeySequence.toString() == Settings::defaultValue(Settings::Server::SwitchModifierKey).toString() &&
          m_relativeMouseMoves == Settings::defaultValue(Settings::Server::RelativeMouseMoves).toBool() &&
          m_win32keepForeground == Settings::defaultValue(Settings::Server::Win32KeepForeground).toBool() &&
          m_disableLockToComputer == Settings::defaultValue(Settings::Server::DisableLockToComputer).toBool() &&

@@ -1094,6 +1094,14 @@ Enabling this setting will disable the server config GUI.</source>
         <source>Enable lock to computer at startup</source>
         <translation>Включать привязку к компьютеру при запуске</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>Переключать только при &amp;удержании</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>Клавиша, удерживаемая при переключении между компьютерами</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

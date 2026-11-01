@@ -1096,6 +1096,14 @@ Enabling this setting will disable the server config GUI.</source>
         <source>Enable lock to computer at startup</source>
         <translation>시작 시 컴퓨터 잠금 사용</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>누르고 있을 때만 전환(&amp;H)</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>컴퓨터를 전환할 때 누르고 있을 키</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

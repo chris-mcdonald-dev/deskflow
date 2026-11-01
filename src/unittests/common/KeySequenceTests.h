@@ -11,4 +11,7 @@ class KeySequenceTests : public QObject
   Q_OBJECT
 private Q_SLOTS:
   void toString_controlShiftPlus_usesNamedPlus();
+  void fromString_controlOnly_isModifierOnly();
+  void fromString_controlPlusA_roundTrips();
+  void fromString_keyNames_roundTrip();
 };

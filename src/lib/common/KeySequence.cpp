@@ -74,6 +74,98 @@ bool KeySequence::isMouseButton() const
   return !m_Sequence.isEmpty() && m_Sequence.last() < Qt::Key_Space;
 }
 
+bool KeySequence::isModifierOnly() const
+{
+  if (m_Sequence.isEmpty()) {
+    return false;
+  }
+
+  for (const auto key : m_Sequence) {
+    if ((key & Qt::KeyboardModifierMask) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+KeySequence KeySequence::fromString(const QString &str)
+{
+  KeySequence result;
+  if (str.isEmpty()) {
+    return result;
+  }
+
+  int modifiers = 0;
+  for (const auto &token : str.split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
+    if (const auto modifier = modifierFromString(token); modifier != 0) {
+      result.m_Sequence.append(modifier);
+      modifiers |= modifier;
+      result.setModifiers(modifiers);
+      continue;
+    }
+
+    const auto key = keyFromString(token);
+    if (key < 0) {
+      // unknown key
+      return {};
+    }
+    result.m_Sequence.append(key);
+    result.setValid(true);
+  }
+  return result;
+}
+
+int KeySequence::modifierFromString(const QString &name)
+{
+  if (name == QLatin1String("Shift")) {
+    return Qt::ShiftModifier;
+  }
+  if (name == QLatin1String("Control")) {
+    return Qt::ControlModifier;
+  }
+  if (name == QLatin1String("Alt")) {
+    return Qt::AltModifier;
+  }
+  if (name == QLatin1String("Meta")) {
+    return Qt::MetaModifier;
+  }
+  return 0;
+}
+
+int KeySequence::keyFromString(const QString &name)
+{
+  for (int i = 0; keyname[i].name != nullptr; ++i) {
+    if (name == QLatin1String(keyname[i].name)) {
+      return keyname[i].key;
+    }
+  }
+
+  // function keys
+  if (name.size() > 1 && name.at(0) == QLatin1Char('F')) {
+    bool ok = false;
+    const auto number = name.mid(1).toInt(&ok);
+    if (ok && number >= 1 && number <= 35) {
+      return Qt::Key_F1 + number - 1;
+    }
+  }
+
+  // escaped unicode, e.g. "\u00e9"
+  if (name.size() == 6 && name.startsWith(QLatin1String("\\u"))) {
+    bool ok = false;
+    const auto value = name.mid(2).toUInt(&ok, 16);
+    if (ok) {
+      return static_cast<int>(value);
+    }
+  }
+
+  // printable 7 bit character
+  if (name.size() == 1 && name.at(0).unicode() < 0x80) {
+    return name.at(0).toUpper().unicode();
+  }
+
+  return -1;
+}
+
 QString KeySequence::toString() const
 {
   QString result;

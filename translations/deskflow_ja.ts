@@ -1098,6 +1098,14 @@ Enabling this setting will disable the server config GUI.</source>
         <source>Enable lock to computer at startup</source>
         <translation>起動時にコンピューター間移動のロックを有効にする</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>押している間のみ移動(&amp;H)</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>コンピューター間の移動中に押したままにするキー</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

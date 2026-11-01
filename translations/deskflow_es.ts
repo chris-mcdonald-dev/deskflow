@@ -1096,6 +1096,14 @@ Al habilitar esta opción, se deshabilitará la interfaz gráfica de usuario (GU
         <source>Enable lock to computer at startup</source>
         <translation type="unfinished">Activar el bloqueo del ordenador al iniciar</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>Cambiar solo mientras se &amp;mantiene</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>Tecla que se debe mantener para cambiar de ordenador</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

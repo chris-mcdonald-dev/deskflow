@@ -66,6 +66,16 @@ public:
   }
   void setKeySequence(const KeySequence &seq);
 
+  //! Allow a sequence that is only a modifier key (e.g. just Ctrl)
+  void setAllowModifierOnly(bool allow)
+  {
+    m_AllowModifierOnly = allow;
+  }
+  bool allowModifierOnly() const
+  {
+    return m_AllowModifierOnly;
+  }
+
   bool valid() const
   {
     return keySequence().valid();
@@ -74,6 +84,7 @@ public:
 protected:
   void mousePressEvent(QMouseEvent *) override;
   void keyPressEvent(QKeyEvent *) override;
+  void keyReleaseEvent(QKeyEvent *) override;
   bool event(QEvent *event) override;
   void appendToSequence(int key);
   void updateOutput();
@@ -99,6 +110,7 @@ private:
   KeySequence m_KeySequence;
   KeySequence m_BackupSequence;
   Status m_Status = Status::Stopped;
+  bool m_AllowModifierOnly = false;
   QString m_MousePrefix = QStringLiteral("mousebutton(");
   QString m_MousePostfix = QStringLiteral(")");
   QString m_KeyPrefix = QStringLiteral("keystroke(");

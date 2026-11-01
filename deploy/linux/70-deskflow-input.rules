@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Deskflow Developers
+# SPDX-License-Identifier: MIT
+
+# Allow the active session user to read key state (hold-to-switch on Wayland)
+SUBSYSTEM=="input", KERNEL=="event*", TAG+="uaccess"

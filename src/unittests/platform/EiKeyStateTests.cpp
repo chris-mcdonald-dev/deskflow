@@ -102,9 +102,10 @@ void EiKeyStateTests::clearStaleModifiers_shiftDownAndNumLockOn_shiftClearedAndN
   QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) != 0);
 }
 
-void EiKeyStateTests::updateLockedModifiers_compositorLockState_numLockFollowsCompositor()
+void EiKeyStateTests::updateModifiers_compositorModifierState_isAuthoritative()
 {
   // Real modifier Mod2 is index 4 (Shift, Lock, Control, Mod1, Mod2, ...).
+  constexpr std::uint32_t xkbShiftMask = 1 << 0;
   constexpr std::uint32_t xkbMod2Mask = 1 << 4;
 
   TestAppUtil appUtil;
@@ -118,20 +119,19 @@ void EiKeyStateTests::updateLockedModifiers_compositorLockState_numLockFollowsCo
   QVERIFY(keymapFile.flush());
   keyState.init(keymapFile.handle(), keymapFile.size());
 
-  keyState.updateXkbState(LeftShiftKeycode, true);
-  QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) == 0);
-
-  // NumLock toggled on locally, reported by the compositor
-  keyState.updateLockedModifiers(xkbMod2Mask);
-  QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) != 0);
+  // modifier state reported by the compositor
+  keyState.updateModifiers(xkbShiftMask, 0, xkbMod2Mask, 0);
   QVERIFY((keyState.pollActiveModifiers() & KeyModifierShift) != 0);
+  QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) != 0);
 
   keyState.clearStaleModifiers();
   QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) != 0);
+  QVERIFY((keyState.pollActiveModifiers() & KeyModifierShift) == 0);
 
-  // NumLock toggled off locally
-  keyState.updateLockedModifiers(0);
+  // all modifiers released
+  keyState.updateModifiers(0, 0, 0, 0);
   QVERIFY((keyState.pollActiveModifiers() & KeyModifierNumLock) == 0);
+  QVERIFY((keyState.pollActiveModifiers() & KeyModifierShift) == 0);
 }
 
 QTEST_MAIN(EiKeyStateTests)

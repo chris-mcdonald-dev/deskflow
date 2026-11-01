@@ -114,6 +114,8 @@ elseif(APPLE)
   )
 elseif(UNIX)
   set(PLATFORM_SOURCES
+    EvdevKeyState.cpp
+    EvdevKeyState.h
     XDGPortalRegistry.h
     XDGPowerManager.cpp
     XDGPowerManager.h

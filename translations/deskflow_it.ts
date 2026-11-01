@@ -1096,6 +1096,14 @@ L&apos;abilitazione di questa impostazione disabiliterà l&apos;interfaccia graf
         <source>Enable lock to computer at startup</source>
         <translation type="unfinished">Abilita il blocco al computer all&apos;avvio</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>Passa solo tenendo &amp;premuto</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>Tasto da tenere premuto per passare da un computer all&apos;altro</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

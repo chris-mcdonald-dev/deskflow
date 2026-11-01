@@ -21,6 +21,13 @@ public:
   bool appendKey(int key, int modifiers);
   bool appendMouseButton(int button);
   bool isMouseButton() const;
+
+  //! True if the sequence is made up of modifier keys only (e.g. just Ctrl)
+  bool isModifierOnly() const;
+
+  //! Build a sequence from its text form, e.g. \c Control or \c Control+a
+  static KeySequence fromString(const QString &str);
+
   bool valid() const
   {
     return m_IsValid;
@@ -61,4 +68,6 @@ private:
   inline static const QChar kFillChar = QChar('0');
 
   static QString keyToString(int key);
+  static int keyFromString(const QString &name);
+  static int modifierFromString(const QString &name);
 };

@@ -12,6 +12,12 @@
 
 #include <xkbcommon/xkbcommon.h>
 
+#include <optional>
+
+#ifdef __linux__
+#include "platform/EvdevKeyState.h"
+#endif
+
 struct xkb_context;
 struct xkb_keymap;
 struct xkb_state;
@@ -35,7 +41,9 @@ public:
   void pollPressedKeys(KeyButtonSet &pressedKeys) const override;
   KeyID mapKeyFromKeyval(std::uint32_t keyval) const;
   void updateXkbState(std::uint32_t keyval, bool isPressed);
-  void updateLockedModifiers(xkb_mod_mask_t lockedMods);
+  void updateModifiers(
+      xkb_mod_mask_t depressed, xkb_mod_mask_t latched, xkb_mod_mask_t locked, xkb_layout_index_t group
+  );
   void clearStaleModifiers() override;
 
 protected:
@@ -52,6 +60,12 @@ private:
   xkb_context *m_xkb = nullptr;
   xkb_keymap *m_xkbKeymap = nullptr;
   xkb_state *m_xkbState = nullptr;
+
+#ifdef __linux__
+  mutable EvdevKeyState m_evdev;
+  mutable std::set<std::uint32_t> m_evdevKeys;
+  mutable std::optional<KeyModifierMask> m_evdevMask;
+#endif
 };
 
 } // namespace deskflow

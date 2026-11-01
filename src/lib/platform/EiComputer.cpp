@@ -461,6 +461,8 @@ void EiComputer::enter()
     // while the cursor sits here with no relayed activity.
     fakeMouseMove(m_cursorX, m_cursorY);
   } else if (m_isPrimary) {
+    // modifier releases may have been missed while we were not capturing
+    m_keyState->clearStaleModifiers();
     LOG_DEBUG("releasing input capture at x=%i y=%i", m_cursorX, m_cursorY);
     m_portalInputCapture->release(m_cursorX, m_cursorY);
     // no more button events once capture is released, so drop any held state
@@ -1028,8 +1030,10 @@ void EiComputer::handleSystemEvent(const Event &)
       }
       break;
     case EI_EVENT_KEYBOARD_MODIFIERS:
-      LOG_VERBOSE("event: keyboard modifiers locked=0x%x", ei_event_keyboard_get_xkb_mods_locked(event));
-      m_keyState->updateLockedModifiers(ei_event_keyboard_get_xkb_mods_locked(event));
+      m_keyState->updateModifiers(
+          ei_event_keyboard_get_xkb_mods_depressed(event), ei_event_keyboard_get_xkb_mods_latched(event),
+          ei_event_keyboard_get_xkb_mods_locked(event), ei_event_keyboard_get_xkb_group(event)
+      );
       break;
 
     // events below are for a receiver context (barriers)

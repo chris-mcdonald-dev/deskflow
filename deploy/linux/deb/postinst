@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: 2026 Deskflow Developers
+# SPDX-License-Identifier: MIT
+
+set -e
+
+# apply the installed udev rule to nodes that already exist
+if command -v udevadm >/dev/null 2>&1; then
+  udevadm trigger --subsystem-match=input --action=change || true
+fi
+
+exit 0

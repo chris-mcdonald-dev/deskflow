@@ -278,6 +278,10 @@ private:
   // returns true iff the two tap switch timer is started
   bool isSwitchTwoTapStarted() const;
 
+  // returns true if switching computers is allowed.  when a switch
+  // key is configured that key (and any modifiers) must be held down.
+  bool isSwitchKeyHeld() const;
+
   // returns true iff should switch because of two tap
   bool shouldSwitchTwoTap() const;
 
@@ -391,6 +395,12 @@ private:
   BaseClientProxy *m_switchComputer = nullptr;
   double m_switchWaitDelay = 0.0;
   EventQueueTimer *m_switchWaitTimer = nullptr;
+
+  // switch key / modifiers that must be held to change computers
+  KeyModifierMask m_switchModifierMask = 0;
+  KeyID m_switchKey = kKeyNone;
+  bool m_switchKeyDown = false;
+  bool m_switchPending = false;
 
   // delay for double-tap computer switching
   double m_switchTwoTapDelay = 0.0;

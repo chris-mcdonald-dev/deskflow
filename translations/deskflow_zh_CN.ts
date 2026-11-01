@@ -1098,6 +1098,14 @@ Enabling this setting will disable the server config GUI.</source>
         <source>Enable lock to computer at startup</source>
         <translation type="unfinished">启动时启用锁定到计算机</translation>
     </message>
+    <message>
+        <source>Only switch while &amp;holding</source>
+        <translation>仅在按住时切换(&amp;H)</translation>
+    </message>
+    <message>
+        <source>Key to hold while switching computers</source>
+        <translation>切换计算机时要按住的键</translation>
+    </message>
 </context>
 <context>
     <name>SettingsDialog</name>

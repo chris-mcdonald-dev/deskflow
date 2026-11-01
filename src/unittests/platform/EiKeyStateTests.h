@@ -18,7 +18,7 @@ class EiKeyStateTests : public QObject
 private Q_SLOTS:
   void initTestCase();
   void clearStaleModifiers_shiftDownAndNumLockOn_shiftClearedAndNumLockPreserved();
-  void updateLockedModifiers_compositorLockState_numLockFollowsCompositor();
+  void updateModifiers_compositorModifierState_isAuthoritative();
 
 private:
   Arch m_arch;

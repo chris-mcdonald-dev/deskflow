@@ -97,8 +97,32 @@ bool EiKeyState::fakeCtrlAltDel()
 
 KeyModifierMask EiKeyState::pollActiveModifiers() const
 {
-  const auto effectiveMask = xkb_state_serialize_mods(m_xkbState, XKB_STATE_MODS_EFFECTIVE);
   const auto lockedMask = xkb_state_serialize_mods(m_xkbState, XKB_STATE_MODS_LOCKED);
+
+#ifdef __linux__
+  // prefer the kernel state, the compositor only reports modifiers while
+  // it is capturing input
+  if (m_computer != nullptr && m_computer->isPrimary() && m_evdev.isAvailable()) {
+    if (const auto &pressed = m_evdev.pressedKeys(); pressed != m_evdevKeys) {
+      m_evdevKeys = pressed;
+      m_evdevMask.reset();
+    }
+    if (!m_evdevMask.has_value()) {
+      if (auto *state = xkb_state_new(m_xkbKeymap); state != nullptr) {
+        for (const auto code : m_evdevKeys) {
+          xkb_state_update_key(state, code + 8, XKB_KEY_DOWN);
+        }
+        m_evdevMask = convertModMask(xkb_state_serialize_mods(state, XKB_STATE_MODS_EFFECTIVE));
+        xkb_state_unref(state);
+      }
+    }
+    if (m_evdevMask.has_value()) {
+      return *m_evdevMask | convertModMask(lockedMask, true);
+    }
+  }
+#endif
+
+  const auto effectiveMask = xkb_state_serialize_mods(m_xkbState, XKB_STATE_MODS_EFFECTIVE);
   return convertModMask(effectiveMask) | convertModMask(lockedMask, true);
 }
 
@@ -345,18 +369,14 @@ void EiKeyState::updateXkbState(uint32_t keyval, bool isPressed)
   xkb_state_update_key(m_xkbState, keyval, isPressed ? XKB_KEY_DOWN : XKB_KEY_UP);
 }
 
-void EiKeyState::updateLockedModifiers(xkb_mod_mask_t lockedMods)
+void EiKeyState::updateModifiers(
+    xkb_mod_mask_t depressed, xkb_mod_mask_t latched, xkb_mod_mask_t locked, xkb_layout_index_t group
+)
 {
-  // The compositor's lock state (Caps/Num/Scroll Lock) is authoritative; it
-  // also covers locks toggled while we weren't seeing the key events.
-  const auto depressedMods = xkb_state_serialize_mods(m_xkbState, XKB_STATE_MODS_DEPRESSED);
-  const auto latchedMods = xkb_state_serialize_mods(m_xkbState, XKB_STATE_MODS_LATCHED);
-  const auto depressedLayout = xkb_state_serialize_layout(m_xkbState, XKB_STATE_LAYOUT_DEPRESSED);
-  const auto latchedLayout = xkb_state_serialize_layout(m_xkbState, XKB_STATE_LAYOUT_LATCHED);
-  const auto lockedLayout = xkb_state_serialize_layout(m_xkbState, XKB_STATE_LAYOUT_LOCKED);
-  xkb_state_update_mask(
-      m_xkbState, depressedMods, latchedMods, lockedMods, depressedLayout, latchedLayout, lockedLayout
+  LOG_VERBOSE(
+      "update modifiers: depressed=0x%x latched=0x%x locked=0x%x group=%u", depressed, latched, locked, group
   );
+  xkb_state_update_mask(m_xkbState, depressed, latched, locked, 0, 0, group);
 }
 
 void EiKeyState::clearStaleModifiers()

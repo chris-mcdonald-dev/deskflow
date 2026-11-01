@@ -26,6 +26,9 @@ install(
   DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo/
 )
 
+# Allow the active session user to read key state
+install(FILES ${MY_DIR}/70-deskflow-input.rules DESTINATION lib/udev/rules.d)
+
 # Prepare PKGBUILD for Arch Linux
 configure_file(
   ${MY_DIR}/arch/PKGBUILD.in
@@ -36,8 +39,10 @@ configure_file(
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "qt6-svg-plugins")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${MY_DIR}/deb/postinst")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv2")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/System")
+set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${MY_DIR}/deb/postinst")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   # Get Distro name information
