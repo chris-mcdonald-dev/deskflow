@@ -158,6 +158,7 @@ This section contains options used when in server mode it will begin with `[serv
 |win32KeepForeground | `true` or `false` | If set to ''true'' (the default), Deskflow will grab the foreground focus on a Windows server (thereby putting all other windows in the background) upon switching to a client. If set to ''false'', it will leave the currently foreground window in the foreground. Deskflow grabs the focus to avoid issues with other apps interfering with Deskflow's ability to read the hardware inputs. |
 
  - You can use both the ''switchDelay'' and ''switchDoubleTap'' options at the same time. Deskflow will switch when either requirement is satisfied.
+ - Clipboard sharing on a Wayland server needs `wl-paste` and `wl-copy` from the `wl-clipboard` package. X11 servers do not need it.
 
 ### Computer Settings
 

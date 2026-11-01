@@ -36,6 +36,7 @@ depends=(
   qt6-svg
   qt6-translations
 )
+optdepends=('wl-clipboard: clipboard sharing when the server runs on Wayland')
 
 options=('!debug')
 

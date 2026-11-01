@@ -38,7 +38,7 @@ configure_file(
 
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "qt6-svg-plugins")
+set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "qt6-svg-plugins, wl-clipboard")
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${MY_DIR}/deb/postinst")
 set(CPACK_RPM_PACKAGE_LICENSE "GPLv2")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/System")

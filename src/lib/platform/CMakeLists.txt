@@ -116,6 +116,8 @@ elseif(UNIX)
   set(PLATFORM_SOURCES
     EvdevKeyState.cpp
     EvdevKeyState.h
+    WlClipboard.cpp
+    WlClipboard.h
     XDGPortalRegistry.h
     XDGPowerManager.cpp
     XDGPowerManager.h

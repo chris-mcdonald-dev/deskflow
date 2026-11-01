@@ -16,6 +16,7 @@
 #include "deskflow/IComputer.h"
 #include "deskflow/OptionTypes.h"
 #include "platform/EiClipboard.h"
+#include "platform/WlClipboard.h"
 #include "platform/EiEventQueueBuffer.h"
 #include "platform/EiKeyState.h"
 #include "platform/PortalInputCapture.h"
@@ -64,6 +65,10 @@ EiComputer::EiComputer(bool isPrimary, IEventQueue *events, bool usePortal)
     if (isPrimary) {
       // Portal input capture manages its own clipboard
       m_portalInputCapture = new PortalInputCapture(this, m_events);
+#ifndef HAVE_LIBPORTAL_CLIPBOARD
+      // the portal cannot provide a clipboard here, use the Wayland one
+      m_clipboard = new deskflow::WlClipboard(kClipboardClipboard);
+#endif
 #ifdef HAVE_LIBPORTAL_SHORTCUTS
       m_portalGlobalShortcuts = new PortalGlobalShortcuts(this, m_events);
 #endif
@@ -180,6 +185,10 @@ void *EiComputer::getEventTarget() const
 
 bool EiComputer::getClipboard(ClipboardID id, IClipboard *clipboard) const
 {
+  if (m_clipboard != nullptr) {
+    return IClipboard::copy(clipboard, m_clipboard);
+  }
+
   // If using portal input capture, get clipboard from there
   if (m_portalInputCapture) {
     const auto sourceClipboard = m_portalInputCapture->getClipboard(id);
@@ -189,12 +198,7 @@ bool EiComputer::getClipboard(ClipboardID id, IClipboard *clipboard) const
     return IClipboard::copy(clipboard, sourceClipboard);
   }
 
-  // Otherwise use our own clipboard
-  if (!m_clipboard) {
-    return false;
-  }
-
-  return IClipboard::copy(clipboard, m_clipboard);
+  return false;
 }
 
 void EiComputer::getShape(int32_t &x, int32_t &y, int32_t &w, int32_t &h) const
@@ -490,8 +494,9 @@ bool EiComputer::setClipboard(ClipboardID id, const IClipboard *clipboard)
     return false;
   }
 
-  // If using portal input capture, set clipboard there
-  if (m_portalInputCapture) {
+  // Our own clipboard takes precedence when we have one
+  if (m_clipboard == nullptr && m_portalInputCapture) {
+    // If using portal input capture, set clipboard there
     IClipboard *targetClipboard = m_portalInputCapture->getClipboard(id);
     if (!targetClipboard) {
       return false;
@@ -499,7 +504,6 @@ bool EiComputer::setClipboard(ClipboardID id, const IClipboard *clipboard)
     return IClipboard::copy(targetClipboard, clipboard);
   }
 
-  // Otherwise use our own clipboard
   if (!m_clipboard) {
     return false;
   }
