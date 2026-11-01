@@ -9,9 +9,11 @@
 #include "base/Log.h"
 
 #include <algorithm>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <poll.h>
 
 #ifdef __linux__
 
@@ -46,15 +48,33 @@ std::string runCapture(const char *const argv[])
   close(fds[1]);
   std::string out;
   char buffer[4096];
-  ssize_t n = 0;
-  while ((n = read(fds[0], buffer, sizeof(buffer))) > 0) {
+  bool timedOut = false;
+  for (;;) {
+    struct pollfd pfd = {fds[0], POLLIN, 0};
+    const int ready = poll(&pfd, 1, 1000);
+    if (ready < 0) {
+      break;
+    }
+    if (ready == 0) {
+      timedOut = true;
+      break;
+    }
+    const ssize_t n = read(fds[0], buffer, sizeof(buffer));
+    if (n <= 0) {
+      break;
+    }
     out.append(buffer, static_cast<size_t>(n));
   }
   close(fds[0]);
 
+  if (timedOut) {
+    LOG_WARN("timed out reading the Wayland clipboard");
+    kill(pid, SIGKILL);
+  }
+
   int status = 0;
   waitpid(pid, &status, 0);
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+  if (timedOut || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
     return {};
   }
   return out;
@@ -158,6 +178,8 @@ void WlClipboard::close() const
   m_open = false;
   if (m_owner) {
     pushToWayland();
+    // the selection is no longer ours, so the next open() must read it again
+    m_owner = false;
   }
 }
 
